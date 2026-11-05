@@ -25,6 +25,7 @@ import { PlaceItem } from '../context/SearchContext.js';
 import { useAuth } from '../context/AuthContext.js';
 import { SEED_PLACES } from '../../server/src/seed/seedData.js';
 import { SEED_REVIEWS } from '../../server/src/seed/seedReviews.js';
+import { assessImageInBrowser } from '../utils/geminiClient.js';
 
 export const PlaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -112,6 +113,30 @@ export const PlaceDetail: React.FC = () => {
   const runAiAssessment = async (imageUrl?: string) => {
     if (!id) return;
     setAssessing(true);
+
+    const isStaticDeploy = import.meta.env.BASE_URL !== '/' && !import.meta.env.VITE_API_URL;
+
+    // On GitHub Pages: run Gemini assessment directly in the browser
+    if (isStaticDeploy) {
+      try {
+        if (!selectedImageFile) {
+          alert('Please upload an entrance photo first before requesting an AI assessment.');
+          setAssessing(false);
+          return;
+        }
+        const result = await assessImageInBrowser(selectedImageFile);
+        setAssessmentResult(result);
+        if (place) {
+          setPlace({ ...place, aiAssessment: result });
+        }
+      } catch (err: any) {
+        alert(err?.message || 'AI assessment failed');
+      } finally {
+        setAssessing(false);
+      }
+      return;
+    }
+
     try {
       let res;
       if (selectedImageFile) {
