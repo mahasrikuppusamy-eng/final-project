@@ -104,6 +104,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (name: string, email: string, password: string) => {
+    // On GitHub Pages (static deploy), simulate registration locally
+    const isStaticDeploy = import.meta.env.BASE_URL !== '/' && !import.meta.env.VITE_API_URL;
+    if (isStaticDeploy) {
+      const demoUser: User = {
+        id: `demo_${Date.now()}`,
+        name,
+        email,
+        role: 'user',
+      };
+      const demoToken = `demo_${demoUser.id}`;
+      localStorage.setItem('accessable_token', demoToken);
+      localStorage.setItem('accessable_demo_user', JSON.stringify(demoUser));
+      setToken(demoToken);
+      setUser(demoUser);
+      return { success: true };
+    }
+
     try {
       const res = await api.post('/api/auth/register', { name, email, password });
       if (res.data.success) {

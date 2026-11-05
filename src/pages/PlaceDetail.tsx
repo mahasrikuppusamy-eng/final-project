@@ -23,6 +23,7 @@ import { ReviewList, ReviewItem } from '../components/ReviewList.js';
 import { ReviewForm } from '../components/ReviewForm.js';
 import { PlaceItem } from '../context/SearchContext.js';
 import { useAuth } from '../context/AuthContext.js';
+import { SEED_PLACES } from '../../server/src/seed/seedData.js';
 
 export const PlaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -47,6 +48,20 @@ export const PlaceDetail: React.FC = () => {
     async function loadPlace() {
       if (!id) return;
       setLoading(true);
+
+      // On GitHub Pages (static deploy), load from seed data
+      const isStaticDeploy = import.meta.env.BASE_URL !== '/' && !import.meta.env.VITE_API_URL;
+      if (isStaticDeploy) {
+        const found = SEED_PLACES.find((p) => p._id === id);
+        if (found) {
+          setPlace({ ...found, createdAt: '2026-03-01T00:00:00.000Z', isSample: true } as PlaceItem);
+        } else {
+          setError('Place not found');
+        }
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await api.get(`/api/places/${id}`);
         if (res.data.success) {
