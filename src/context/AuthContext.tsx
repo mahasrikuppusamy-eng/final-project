@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axios.js';
+import { SEED_USERS } from '../../server/src/seed/seedData.js';
 
 export interface User {
   id: string;
@@ -31,6 +32,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async function loadUser() {
       const storedToken = localStorage.getItem('accessable_token');
       if (storedToken) {
+        // Restore demo session (GitHub Pages static deploy)
+        if (storedToken.startsWith('demo_')) {
+          const demoUserJson = localStorage.getItem('accessable_demo_user');
+          if (demoUserJson) {
+            try {
+              setUser(JSON.parse(demoUserJson));
+            } catch {
+              localStorage.removeItem('accessable_token');
+              localStorage.removeItem('accessable_demo_user');
+            }
+          }
+          setLoading(false);
+          return;
+        }
+
         try {
           const res = await api.get('/api/auth/me');
           if (res.data.success && res.data.user) {
@@ -52,6 +68,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
+    // On GitHub Pages (static deploy), authenticate against seed users locally
+    const isStaticDeploy = import.meta.env.BASE_URL !== '/' && !import.meta.env.VITE_API_URL;
+    if (isStaticDeploy) {
+      const match = SEED_USERS.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+      );
+      if (match) {
+        const demoUser: User = { id: match._id, name: match.name, email: match.email, role: match.role };
+        const demoToken = `demo_${match._id}`;
+        localStorage.setItem('accessable_token', demoToken);
+        localStorage.setItem('accessable_demo_user', JSON.stringify(demoUser));
+        setToken(demoToken);
+        setUser(demoUser);
+        return { success: true };
+      }
+      return { success: false, message: 'Invalid email or password. Try the demo credentials below.' };
+    }
+
     try {
       const res = await api.post('/api/auth/login', { email, password });
       if (res.data.success) {
@@ -89,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('accessable_token');
+    localStorage.removeItem('accessable_demo_user');
     setToken(null);
     setUser(null);
   };

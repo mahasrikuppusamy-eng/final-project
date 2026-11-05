@@ -203,7 +203,9 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
     };
 
-    if (import.meta.env.BASE_URL !== '/' && !import.meta.env.VITE_API_URL) {
+    // On GitHub Pages (static deploy), no backend is available — always use sample data
+    const isStaticDeploy = import.meta.env.BASE_URL !== '/' && !import.meta.env.VITE_API_URL;
+    if (isStaticDeploy) {
       setPlaces(filterSamplePlaces());
       setIsSampleData(true);
       return;
