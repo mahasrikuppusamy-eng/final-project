@@ -24,6 +24,7 @@ import { ReviewForm } from '../components/ReviewForm.js';
 import { PlaceItem } from '../context/SearchContext.js';
 import { useAuth } from '../context/AuthContext.js';
 import { SEED_PLACES } from '../../server/src/seed/seedData.js';
+import { SEED_REVIEWS } from '../../server/src/seed/seedReviews.js';
 
 export const PlaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +56,8 @@ export const PlaceDetail: React.FC = () => {
         const found = SEED_PLACES.find((p) => p._id === id);
         if (found) {
           setPlace({ ...found, createdAt: '2026-03-01T00:00:00.000Z', isSample: true } as PlaceItem);
+          const placeReviews = SEED_REVIEWS.filter((r) => r.place === id) as any[];
+          setReviews(placeReviews);
         } else {
           setError('Place not found');
         }
